@@ -1,0 +1,156 @@
+# NGDR layer mapping - reviewed 2026-11-01 against metadata/ngdr_wfs_layers.csv (773 layers);
+# statuses updated after the D15-D20 audits (decisions_log 2026-11-01).
+# status: core = scored | context = kept, not scored | dropped = not downloaded or audited
+# wfs_name: the server's name for the layer (blank = skip).
+# Rule: take each layer from the Tectonic service (*_tectonic_ngdr) where one exists;
+# "*_mata_*" layers belong to a different map series and are not used.
+layers:
+  - id: D15
+    folder: D15_gsi_geology2m
+    layer: Geology_2M
+    status: context
+    # Fills sheets that Lithology_50K marks UNMAPPED; source of supergroup/age framework.
+    wfs_name: cite:geology_2m_gcs_ngdr_20_5
+    # The name NGDR's own API returns for the Geology 2M service (API guide, p.12).
+  - id: D15
+    folder: D15_gsi_geology2m
+    layer: Geology_2M_alt
+    status: dropped
+    wfs_name: cite:geology_2m_gcs_ngdr
+    # Dropped after audit: same units, but 3.45M km2 incl. ~0.2M km2 "Unmapped"/blank and no objectid/shape_area.
+    # Not used: geology_2m_geochronology (ages; deferred), geology_2m_age_based_mata_ngdr_gcs (other series).
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: TECTONIC_FRAMEWORK
+    status: core
+    wfs_name: cite:tectonic_framework_ngdr
+    # Not used: techtonic_framework_mata_ngdr_gcs (other series).
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: SUTURE_ZONE_TECTONIC
+    status: core
+    wfs_name: cite:suture_zone_tectonic_ngdr
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: SHEAR_ZONE_TECTONIC
+    status: core
+    wfs_name: cite:shear_zone_tectonic_ngdr
+    # Not used: shear_zone_25k / _gcs / _hardrock_stm25k (1:25k mapping, regional phase), _mata (other series).
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: FAULT_TECTONIC
+    status: core
+    wfs_name: cite:fault_tectonic_ngdr
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: BASEMENT_DEPTH_TECTONIC
+    status: core
+    wfs_name: cite:basement_depth_tectonic_ngdr
+    # Not used: basement_depth_ngdr (Seismotectonic copy).
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: THRUST_TECTONIC
+    status: core
+    # Kept: FAULT_TECTONIC has no thrust class, so the two do not overlap.
+    wfs_name: cite:thrust_tectonic_ngdr
+  - id: D16
+    folder: D16_gsi_tectonic
+    layer: BOUGER_GRAVITY_ANOMALY_TECTONIC
+    status: context
+    # Contours (mGal). Used to check WGM2012 over India, and as fallback if BGI refuses commercial use.
+    wfs_name: cite:bouger_gravity_anomaly_tectonic_ngdr
+  - id: D17
+    folder: D17_gsi_seismotectonic
+    layer: ACTIVE_FAULT
+    status: context
+    # 26 faults from individual field studies. National active faults = FAULT_TECTONIC "Neotectonic Fault".
+    wfs_name: cite:active_fault_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: DEPOSIT
+    status: core
+    wfs_name: cite:deposit_ngdr
+    # If the audit shows DEPOSIT lacks chromite / nickel / magnesite / talc / asbestos / uranium,
+    # Thematic maps below add the ultramafic-indicator deposits; merged into one point layer in Phase 3.
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Chromite
+    status: core
+    wfs_name: cite:iron_ferro_chromite_mineral_map_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Chromite_Nickel
+    status: core
+    wfs_name: cite:iron_ferro_chromite_nickel_mineral_map_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Chromite_PGE
+    status: core
+    wfs_name: cite:iron_ferro_chromite_pge_mineral_map_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Nickel
+    status: core
+    wfs_name: cite:iron_ferro_nickel_mineral_map_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Magnesite
+    status: core
+    wfs_name: cite:ceramic_magnesite_mineral_map_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Asbestos
+    status: core
+    wfs_name: cite:industri_asbestos_mineral_map_ngdr
+  - id: D18
+    folder: D18_gsi_mineral
+    layer: Talc
+    status: core
+    wfs_name: cite:others_talc_mineral_map_ngdr
+    # Not used: pge_chromite_critical_min_ngdr (same records as Chromite_PGE), nickel_cobalt_critical_min_ngdr
+    # (mostly sediment/laterite hosted), radioactive_uranium_mineral_map_ngdr (6 points; radiolysis comes from granitoid lithology).
+  - id: D19
+    folder: D19_gsi_geothermal
+    layer: GEOTHERMAL_SPRING_GEOTHERMAL
+    status: context
+    # Evidence list (heat and deep fluid flow), not a scoring layer.
+    wfs_name: cite:geothermal_spring_geothermal
+    # Not used: hot_spring_ngdr (Seismotectonic copy).
+  - id: D20
+    folder: D20_gsi_ground_geophysics
+    layer: GRAVITY
+    status: core
+    wfs_name: cite:gravity_gcs_ngdr
+    # 756,405 ground stations with observed gravity and Bouguer anomaly. Replaces WGM2012 over India
+    # where stations exist. First attempt failed (too large for one go); the download now resumes.
+  - id: D21
+    folder: D21_gsi_boundary
+    layer: STATE_BOUNDARY
+    status: core
+    wfs_name: cite:india_state_boundary_ngdr_print
+    # India mask for clipping the tectonic maps, and state names for the shortlist.
+    # Not used: india_state_boundary (server CRS EPSG:404000 = undefined).
+  # Largest layer last, so everything else is in place if it takes a while.
+  - id: D15
+    folder: D15_gsi_geology2m
+    layer: Lithology_50K
+    status: core
+    wfs_name: cite:lithology_gcs_ngdr_makevalid
+    # GSI 1:50,000 seamless lithology, 360,702 polygons, with a `lithologic` rock-type column.
+    # Same count as lithology_gcs_ngdr / _ngdr1; the _makevalid copy has repaired geometries.
+    # Not used: lithology_gcs_ngdr1_new (53k, partial), lithology_25k_ngdr (94k, 1:25k, partial),
+    # karnataka_lithology_50k (one state, already inside the seamless layer).
+  # Evidence layers, NOT scored (decisions_log 2026-11-09). Found by scripts/29_evidence_data.py probe.
+  - id: D24
+    folder: D24_gsi_magnetic
+    layer: MAGNETIC
+    status: context
+    wfs_name: cite:magnetic_gcs_ngdr
+    # 716,352 ground magnetic stations: observed_m, igrf_nt, magnetic_a (anomaly, nT), toposheet, lon/lat.
+  - id: D25
+    folder: D25_gsi_ngcm
+    layer: STREAM_SEDIMENTS
+    status: context
+    wfs_name: cite:stream_sediments_gcs_ngdr
+    # 510,641 NGCM stream-sediment samples, ~65 oxides/elements incl. u, th, k2o, cr, ni, mgo.
+    # Not used: soil_c_horizon_gcs_ngdr (45,854 soil samples, same elements) - kept in reserve.

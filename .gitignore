@@ -1,0 +1,6 @@
+data_raw/
+layers/
+.venv/
+__pycache__/
+*.pyc
+*.part

@@ -1,0 +1,68 @@
+# Global layers -> India model columns (global test, decisions_log 2026-11-03). Fixed from the layers' legends and audits
+# (D02 GLiM, D03 GEM, D09 Hasterok) BEFORE any EPRI occurrence is joined to the grid. Do not edit after the test runs.
+grid:
+  h3_res: 5                 # ~252 km2 cells; India uses res 6 (36 km2)
+  sample_res: 7             # 49 sample points per cell for rock-class fractions
+  raster_m: 2000            # GLiM rasterised at 2 km in its native Eckert IV projection
+
+# GLiM `Litho` = level 1 (2 letters) + level 2 (2) + level 3 (2); '__' = not specified.
+glim_level1:                # -> India rock class (configs/lithology_classes.yaml codes)
+  su: QUAT                  # unconsolidated sediments
+  ss: SST                   # siliciclastic sedimentary (level 2 'sh' fine-grained -> SH, below)
+  sm: SH                    # mixed sedimentary (carbonate + siliciclastic, mostly fine)
+  sc: CARB
+  ev: EVAP
+  mt: GNS                   # metamorphics (level 2 'am'/'gr' -> MAF_V; level 3 'sr' -> MSED, below)
+  pa: GRAN                  # acid plutonic
+  pi: GRAN                  # intermediate plutonic (India's GRAN class holds granitoids incl. diorite)
+  pb: MAF_I                 # basic plutonic (gabbro; GLiM has no separate ultramafic class)
+  va: VOLC
+  vi: VOLC
+  vb: MAF_V                 # basic volcanic (-> MAF_D inside Hasterok 'magmatic province' = flood basalts, like Deccan)
+  py: VOLC                  # pyroclastics
+  ig: NODATA                # ice and glaciers
+  wb: NODATA
+  nd: NODATA
+overrides:                  # applied in this order, on the full Litho code
+  - {level: 2, code: sh, from: SST, to: SH}      # fine-grained siliciclastics
+  - {level: 2, code: am, from: GNS, to: MAF_V}   # amphibolite (metabasite)
+  - {level: 2, code: gr, from: GNS, to: MAF_V}   # greenstone
+  - {level: 3, code: sr, from: GNS, to: MSED}    # metamorphic with sedimentary protolith
+flags:
+  greenstone: {level: 2, code: gr}    # -> tf_greenstone (share of the cell)
+  evaporite: {level: 3, code: ev}     # -> any_EVAP (with level-1 'ev')
+  iron_formation: {level: 3, code: fe}   # -> any_BIF; ONLY if >= 3 of the 12 largest 'fe' polygons lie within 300 km of a
+                                         #    known iron-formation district below (automatic check in script 25); otherwise dropped
+iron_formation_districts:   # lon, lat (approximate centres)
+  Hamersley: [118.0, -22.5]
+  Carajas: [-50.5, -6.0]
+  Kursk Magnetic Anomaly: [37.0, 51.0]
+  Krivoy Rog: [33.4, 47.9]
+  Labrador Trough: [-67.0, 54.0]
+  Singhbhum-Odisha: [85.5, 22.0]
+  Minas Gerais Quadrilatero Ferrifero: [-43.6, -20.2]
+  Lake Superior (Mesabi-Marquette): [-90.0, 47.0]
+  Transvaal (Sishen-Thabazimbi): [23.0, -27.5]
+  Kostomuksha: [30.6, 64.6]
+ultramafic: none            # GLiM has no ultramafic class: km2_UM_*, any_UMA, n_um_* = 0 everywhere (no global deposit layer).
+                            # The serpentinisation factor then rests on tf_ophiolite, tf_greenstone and f_MAF_I.
+
+hasterok:                   # global_gprv.shp prov_type
+  ophiolite: ["ophiolite complex"]
+  rift: ["narrow rift", "wide rift"]
+  accretion: ["accretionary complex"]
+  flood_basalt: ["magmatic province"]
+  tf_class: "prov_type + ' ' + lastorogen, title case"   # V1.2 preservation regex then matches 'Accretionary', 'Himalaya(n)'
+  crustal_boundaries: "province boundaries shared by two non-oceanic provinces -> d_suture"
+
+gem:                        # all GEM faults are active
+  d_fault_any: all
+  d_neotectonic: all
+  d_thrust: "slip_type contains Reverse or Thrust"
+  d_fault_basement: "GEM fault points inside cells with f_hardrock >= 0.5 (same idea as the US test)"
+  d_shear: none
+
+gravity: "WGM2012 Bouguer at cell centres; residual = value - mean within 50 km (NaN if < 50% of neighbours have data)"
+depth: "CRUST1.0 sediment thickness (1 degree) -> bd_depth_m"
+heat: "IHFC onshore sites, median within 50 km -> hf_median_50km (baseline only)"
+distances: "great-circle, from lines densified every 2 km (no projection is valid worldwide)"

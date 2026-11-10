@@ -1,0 +1,137 @@
+# Play-fairway scoring rules for India, version 1.2 (2026-11-02).
+# v1.1 changes after the first run are listed in metadata/decisions_log.md (structural fixes, not tuning).
+# Method: USGS Professional Paper 1900 (Gelman, Hearon & Ellis 2025) chance-of-sufficiency approach.
+#
+# How to read this file
+#   Each COMPONENT (generation, migration, reservoir, seal, preservation) has one or more FACTORS.
+#   Each factor has RULES, checked top to bottom: the FIRST rule whose condition is true gives the
+#   cell its chance of sufficiency (COS) for that factor, as [low, most likely, high]. If no rule
+#   matches, `default` applies. Conditions use the column names of layers/india_h3r6.gpkg.
+#   Missing values (no data) make every comparison false, so a rule like "g_res != g_res"
+#   (true only for missing values) is used to give no-data cells their own, wider range.
+#   Factors inside a component combine as "any of them is enough" (noisy-OR: 1 - product(1 - COS)).
+#   Components multiply: accumulation = charge x migration x reservoir x seal x preservation.
+#   Monte Carlo: each run draws every rule's COS from its triangular [low, mode, high]; one draw
+#   per rule per run, shared by all cells using that rule (the uncertainty is in our judgement of
+#   the rule, not cell by cell).
+#
+# These numbers are V1 expert priors, set before seeing any result. Change them here, re-run
+# scripts/12_score.py, and record the change in metadata/decisions_log.md.
+
+settings:
+  runs: 1000                  # Monte Carlo runs
+  seed: 20261102
+  top_shares: [0.10, 0.01]    # ranking probabilities: top 10% and top 1% of India
+  lateral_migration_km: 50    # v1.1: was 250 (PP 1900 maximum); 250 km saturated charge across India
+  lateral_block_res: 5        # source search on H3 res-5 blocks (~250 km2)
+  exclude_if: "lith_cover == 0"   # no mapped geology -> not scored ("no data")
+
+derived:                      # helper columns computed before scoring
+  f_crystalline: "f_GNS + f_GRAN"
+  f_sed_reservoir: "f_SST + f_CARB"
+  f_hardrock: "f_GNS + f_GRAN + f_MAF_I + f_MAF_V + f_UM + f_MSED"   # v1.1: Deccan basalt counted as seal cover only, not also as reservoir
+  d_crustal_zone: "minimum(minimum(d_shear, d_suture), d_thrust)"
+
+components:
+  generation:
+    combine: noisy_or
+    factors:
+      serpentinisation:       # olivine-bearing ultramafic rock + water -> H2 (strongest source)
+        rules:
+          - {when: "km2_UM_main >= 2",                    cos: [0.60, 0.80, 0.95], why: "ultramafic body mapped as main rock, >= 2 km2 in cell"}
+          - {when: "n_um_strong >= 1",                    cos: [0.55, 0.75, 0.90], why: "ultramafic-hosted deposit (chromite, Ni, PGE) in cell"}
+          - {when: "km2_UM_any >= 2",                     cos: [0.40, 0.60, 0.80], why: "ultramafic as minor rock (melange, greenstone), >= 2 km2"}
+          - {when: "km2_UM_any > 0",                      cos: [0.25, 0.45, 0.65], why: "small ultramafic bodies"}
+          - {when: "tf_ophiolite >= 0.1",                 cos: [0.25, 0.45, 0.65], why: "ophiolite / melange tectonic unit"}
+          - {when: "any_UMA > 0 or n_um_moderate >= 1",   cos: [0.15, 0.30, 0.50], why: "talc / tremolite / magnesite alteration; weaker deposit evidence"}
+          - {when: "tf_greenstone >= 0.2",                cos: [0.10, 0.25, 0.40], why: "greenstone belt (komatiite / ultramafic likely below map scale)"}
+          - {when: "f_MAF_I >= 0.05",                     cos: [0.08, 0.20, 0.35], why: "gabbro / norite / dolerite"}
+        default: [0.01, 0.03, 0.08]
+      iron_oxidation:         # Fe(II) in iron formation or mafic rock oxidised by water -> H2
+        rules:
+          - {when: "any_BIF > 0",                         cos: [0.25, 0.45, 0.65], why: "banded iron formation"}
+          - {when: "f_MAF_V >= 0.2",                      cos: [0.10, 0.20, 0.35], why: "basalt / amphibolite outside the Deccan"}
+          - {when: "f_MAF_D >= 0.5",                      cos: [0.03, 0.08, 0.15], why: "Deccan flood basalt (thick but little olivine)"}
+        default: [0.01, 0.02, 0.05]
+      radiolysis:             # U/Th/K radiation splits water in old crystalline crust (slow, widespread)
+        rules:
+          - {when: "f_crystalline >= 0.5",                cos: [0.08, 0.18, 0.30], why: "granite / gneiss dominant"}
+          - {when: "f_crystalline >= 0.1",                cos: [0.04, 0.10, 0.18], why: "some granite / gneiss"}
+        default: [0.01, 0.02, 0.05]
+      dense_body:             # positive residual gravity = possible buried mafic / ultramafic body
+        rules:
+          - {when: "g_res != g_res",                      cos: [0.02, 0.08, 0.25], why: "no gravity data: neutral prior, wide"}
+          - {when: "g_res >= 10",                         cos: [0.15, 0.30, 0.45], why: "residual >= +10 mGal"}
+          - {when: "g_res >= 5",                          cos: [0.08, 0.18, 0.30], why: "residual +5 to +10 mGal"}
+        default: [0.01, 0.04, 0.10]
+
+  migration:
+    combine: noisy_or
+    factors:
+      basement_faults:        # faults that cut the basement connect deep sources to shallow traps
+        rules:
+          - {when: "d_fault_basement <= 5",               cos: [0.50, 0.70, 0.85], why: "within 5 km"}
+          - {when: "d_fault_basement <= 15",              cos: [0.30, 0.50, 0.65], why: "5-15 km"}
+          - {when: "d_fault_basement <= 30",              cos: [0.15, 0.30, 0.45], why: "15-30 km"}
+        default: [0.03, 0.10, 0.20]
+      crustal_zones:          # shear zones, sutures, thrusts: crust-scale pathways
+        rules:
+          - {when: "d_crustal_zone <= 10",                cos: [0.30, 0.50, 0.70], why: "within 10 km"}
+          - {when: "d_crustal_zone <= 25",                cos: [0.15, 0.30, 0.45], why: "10-25 km"}
+        default: [0.01, 0.03, 0.08]
+      other_faults:
+        rules:
+          - {when: "d_fault_any <= 5",                    cos: [0.15, 0.30, 0.45], why: "any mapped fault / lineament within 5 km"}
+          - {when: "d_fault_any <= 15",                   cos: [0.08, 0.18, 0.30], why: "5-15 km"}
+        default: [0.01, 0.05, 0.10]
+
+  reservoir:
+    combine: noisy_or
+    factors:
+      sedimentary:
+        rules:
+          - {when: "f_sed_reservoir >= 0.3",              cos: [0.35, 0.55, 0.75], why: "sandstone / carbonate >= 30% of cell"}
+          - {when: "f_sed_reservoir >= 0.1",              cos: [0.20, 0.35, 0.50], why: "10-30%"}
+        default: [0.01, 0.05, 0.10]
+      basin_depth:            # GSI basement-depth contours: a real sedimentary basin below the surface
+        rules:
+          - {when: "bd_depth_m >= 500 and bd_depth_m <= 6000", cos: [0.25, 0.40, 0.60], why: "0.5-6 km of basin fill"}
+          - {when: "bd_depth_m > 6000",                   cos: [0.15, 0.25, 0.40], why: "> 6 km: deep, hot, less accessible"}
+        default: [0.01, 0.05, 0.15]
+      fractured_basement:     # crystalline / volcanic rock can store gas in fractures near faults
+        rules:
+          - {when: "f_hardrock >= 0.5 and d_fault_any <= 10", cos: [0.15, 0.30, 0.45], why: "hard rock near faults"}
+          - {when: "f_hardrock >= 0.5",                   cos: [0.05, 0.12, 0.20], why: "hard rock, few faults"}
+        default: [0.01, 0.03, 0.08]
+
+  seal:
+    combine: noisy_or
+    factors:
+      evaporite:
+        rules:
+          - {when: "any_EVAP >= 0.05",                    cos: [0.50, 0.70, 0.85], why: "pre-Quaternary gypsum / anhydrite / salt on >= 5% of the cell (v1.2)"}
+        default: [0.00, 0.01, 0.03]
+      shale:
+        rules:
+          - {when: "f_SH >= 0.3",                         cos: [0.30, 0.50, 0.70], why: "shale / mudstone >= 30%"}
+          - {when: "f_SH >= 0.1",                         cos: [0.15, 0.30, 0.45], why: "10-30%"}
+        default: [0.01, 0.03, 0.08]
+      low_permeability_cover:
+        rules:
+          - {when: "f_MAF_D >= 0.5",                      cos: [0.15, 0.30, 0.45], why: "flood basalt cover over older rocks"}
+          - {when: "f_QUAT >= 0.5 and bd_depth_m >= 500", cos: [0.10, 0.20, 0.35], why: "thick alluvial basin with clay layers"}
+          - {when: "f_MSED >= 0.3",                       cos: [0.08, 0.18, 0.30], why: "slate / phyllite / schist"}
+        default: [0.01, 0.05, 0.12]
+
+  preservation:
+    combine: product          # v1.1: risks multiply - both must be acceptable
+    factors:
+      tectonic_stability:     # young active faults can let gas leak out
+        rules:
+          - {when: "d_neotectonic <= 5",                  cos: [0.30, 0.50, 0.70], why: "neotectonic fault within 5 km"}
+          - {when: "d_neotectonic <= 15",                 cos: [0.45, 0.65, 0.80], why: "5-15 km"}
+        default: [0.60, 0.80, 0.90]
+      orogenic_activity:      # v1.1: active collision / subduction margins uplift, erode and breach seals
+        rules:
+          - {when: "tf_class.str.contains('Himalaya|Accretionary|Accreted|Schuppen|Eastern Boundary Thrust', na=False)", cos: [0.40, 0.60, 0.80], why: "Himalayan orogen, Indo-Burman and Andaman active margins"}
+        default: [0.85, 0.95, 1.00]

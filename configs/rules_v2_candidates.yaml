@@ -1,0 +1,20 @@
+# Rules v2 candidates (decisions_log 2026-11-02, "v2 cross-half protocol").
+# Each switch is a mechanism-based change suggested by the US diagnosis; all combinations are scored.
+# Selection: best AUC on one half (west or east of 100 W); judged ONLY on the other half, both ways.
+# Patches apply to configs/scoring_rules.yaml (v1.2), which itself stays unchanged.
+
+switches:
+  cover:            # reservoir: replace "basin 0.5-6 km deep" (rewards thick basins) with "thin cover over basement"
+    keep: {}
+    thin: {replace_factor: [reservoir, basin_depth],
+           rules: [{when: "bd_depth_m <= 2000", cos: [0.30, 0.45, 0.60], why: "thin cover over basement (<= 2 km)"},
+                   {when: "bd_depth_m <= 4000", cos: [0.15, 0.30, 0.45], why: "2-4 km of cover"},
+                   {when: "bd_depth_m > 4000",  cos: [0.05, 0.12, 0.25], why: "thick basin fill (> 4 km)"}],
+           default: [0.01, 0.05, 0.15]}
+  seal:             # seal worked in reverse
+    keep: {}
+    drop: {drop_component: seal}
+  preservation:     # preservation worked in reverse
+    keep: {}
+    no_faults: {drop_factor: [preservation, tectonic_stability]}
+    drop: {drop_component: preservation}

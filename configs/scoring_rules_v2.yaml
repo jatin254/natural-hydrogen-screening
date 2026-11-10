@@ -1,0 +1,239 @@
+# Scoring rules V2 - India SCREENING map: where hydrogen can form and reach the surface (2026-11-02).
+# Purpose: choose where to SAMPLE (soil gas, springs), not predict accumulations. Unvalidated.
+# Changes from v1.2 (configs/scoring_rules.yaml, unchanged), each from the US test (decisions_log 2026-11-02):
+#   - seal removed: petroleum-style seal scoring worked in reverse in both US halves (+0.08-0.09 AUC when dropped)
+#   - preservation removed: it also worked in reverse, and surface sampling looks for gas that escapes
+#   - reservoir replaced by 'cover': thin cover over basement scores highest (thin sediment was the one
+#     consistent US signal); exposed hard rock with no basin-depth contour counts as thin cover;
+#     no depth and no hard rock (alluvium, sedimentary cover) gets a middle value
+#   - generation and migration unchanged; charge still reaches 50 km
+# Ranking = share of runs a cell is in India's top 10% for charge x migration x cover.
+settings:
+  runs: 1000
+  seed: 20261102
+  top_shares:
+  - 0.1
+  - 0.01
+  lateral_migration_km: 50
+  lateral_block_res: 5
+  exclude_if: lith_cover == 0
+  version: v2
+derived:
+  f_crystalline: f_GNS + f_GRAN
+  f_sed_reservoir: f_SST + f_CARB
+  f_hardrock: f_GNS + f_GRAN + f_MAF_I + f_MAF_V + f_UM + f_MSED
+  d_crustal_zone: minimum(minimum(d_shear, d_suture), d_thrust)
+components:
+  generation:
+    combine: noisy_or
+    factors:
+      serpentinisation:
+        rules:
+        - when: km2_UM_main >= 2
+          cos:
+          - 0.6
+          - 0.8
+          - 0.95
+          why: ultramafic body mapped as main rock, >= 2 km2 in cell
+        - when: n_um_strong >= 1
+          cos:
+          - 0.55
+          - 0.75
+          - 0.9
+          why: ultramafic-hosted deposit (chromite, Ni, PGE) in cell
+        - when: km2_UM_any >= 2
+          cos:
+          - 0.4
+          - 0.6
+          - 0.8
+          why: ultramafic as minor rock (melange, greenstone), >= 2 km2
+        - when: km2_UM_any > 0
+          cos:
+          - 0.25
+          - 0.45
+          - 0.65
+          why: small ultramafic bodies
+        - when: tf_ophiolite >= 0.1
+          cos:
+          - 0.25
+          - 0.45
+          - 0.65
+          why: ophiolite / melange tectonic unit
+        - when: any_UMA > 0 or n_um_moderate >= 1
+          cos:
+          - 0.15
+          - 0.3
+          - 0.5
+          why: talc / tremolite / magnesite alteration; weaker deposit evidence
+        - when: tf_greenstone >= 0.2
+          cos:
+          - 0.1
+          - 0.25
+          - 0.4
+          why: greenstone belt (komatiite / ultramafic likely below map scale)
+        - when: f_MAF_I >= 0.05
+          cos:
+          - 0.08
+          - 0.2
+          - 0.35
+          why: gabbro / norite / dolerite
+        default:
+        - 0.01
+        - 0.03
+        - 0.08
+      iron_oxidation:
+        rules:
+        - when: any_BIF > 0
+          cos:
+          - 0.25
+          - 0.45
+          - 0.65
+          why: banded iron formation
+        - when: f_MAF_V >= 0.2
+          cos:
+          - 0.1
+          - 0.2
+          - 0.35
+          why: basalt / amphibolite outside the Deccan
+        - when: f_MAF_D >= 0.5
+          cos:
+          - 0.03
+          - 0.08
+          - 0.15
+          why: Deccan flood basalt (thick but little olivine)
+        default:
+        - 0.01
+        - 0.02
+        - 0.05
+      radiolysis:
+        rules:
+        - when: f_crystalline >= 0.5
+          cos:
+          - 0.08
+          - 0.18
+          - 0.3
+          why: granite / gneiss dominant
+        - when: f_crystalline >= 0.1
+          cos:
+          - 0.04
+          - 0.1
+          - 0.18
+          why: some granite / gneiss
+        default:
+        - 0.01
+        - 0.02
+        - 0.05
+      dense_body:
+        rules:
+        - when: g_res != g_res
+          cos:
+          - 0.02
+          - 0.08
+          - 0.25
+          why: 'no gravity data: neutral prior, wide'
+        - when: g_res >= 10
+          cos:
+          - 0.15
+          - 0.3
+          - 0.45
+          why: residual >= +10 mGal
+        - when: g_res >= 5
+          cos:
+          - 0.08
+          - 0.18
+          - 0.3
+          why: residual +5 to +10 mGal
+        default:
+        - 0.01
+        - 0.04
+        - 0.1
+  migration:
+    combine: noisy_or
+    factors:
+      basement_faults:
+        rules:
+        - when: d_fault_basement <= 5
+          cos:
+          - 0.5
+          - 0.7
+          - 0.85
+          why: within 5 km
+        - when: d_fault_basement <= 15
+          cos:
+          - 0.3
+          - 0.5
+          - 0.65
+          why: 5-15 km
+        - when: d_fault_basement <= 30
+          cos:
+          - 0.15
+          - 0.3
+          - 0.45
+          why: 15-30 km
+        default:
+        - 0.03
+        - 0.1
+        - 0.2
+      crustal_zones:
+        rules:
+        - when: d_crustal_zone <= 10
+          cos:
+          - 0.3
+          - 0.5
+          - 0.7
+          why: within 10 km
+        - when: d_crustal_zone <= 25
+          cos:
+          - 0.15
+          - 0.3
+          - 0.45
+          why: 10-25 km
+        default:
+        - 0.01
+        - 0.03
+        - 0.08
+      other_faults:
+        rules:
+        - when: d_fault_any <= 5
+          cos:
+          - 0.15
+          - 0.3
+          - 0.45
+          why: any mapped fault / lineament within 5 km
+        - when: d_fault_any <= 15
+          cos:
+          - 0.08
+          - 0.18
+          - 0.3
+          why: 5-15 km
+        default:
+        - 0.01
+        - 0.05
+        - 0.1
+  cover:
+    combine: noisy_or
+    factors:
+      thin_cover:
+        rules:
+        - when: bd_depth_m <= 2000 or (bd_depth_m != bd_depth_m and f_hardrock >= 0.5)
+          cos:
+          - 0.3
+          - 0.45
+          - 0.6
+          why: basement at or near surface (exposed hard rock, or <= 2 km of basin fill)
+        - when: bd_depth_m <= 4000
+          cos:
+          - 0.15
+          - 0.3
+          - 0.45
+          why: 2-4 km of basin fill
+        - when: bd_depth_m > 4000
+          cos:
+          - 0.05
+          - 0.12
+          - 0.25
+          why: thick basin fill (> 4 km)
+        default:
+        - 0.1
+        - 0.25
+        - 0.4

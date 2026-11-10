@@ -1,0 +1,3 @@
+# US validation downloads. Set get: true on the files to fetch, then run `download`.
+# U03 (Quaternary faults) is always downloaded; it is a single direct link.
+files:

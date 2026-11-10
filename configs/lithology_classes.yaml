@@ -1,0 +1,90 @@
+# Rock-type classes for GSI lithology names (Lithology_50K `lithologic`; also mineral host rocks).
+# Version 1, 2026-11-01. Each name is split into its parts ("SANDSTONE, SHALE WITH COAL" ->
+# SANDSTONE | SHALE | COAL). Each part gets the FIRST class below whose pattern matches, so order
+# matters (e.g. BIF before MSED, so "banded magnetite quartzite" is BIF, not quartzite).
+# The polygon's main class = class of its first recognised part (GSI lists the dominant rock first);
+# every other class present is kept as a minor flag.
+# Patterns are regular expressions, matched on upper-case text as whole words.
+# Role column = why the class matters for hydrogen (component of the play-fairway model).
+classes:
+  - code: NODATA
+    label: Unmapped / water / ice
+    role: excluded (no geology)
+    patterns: ['UNMAPPED', 'WATER( BODY)?', 'SNOW( COVER)?', 'GLACIER\w*', 'ICE', 'RIVER', 'LAKE', 'RESERVOIR', 'NO DATA', 'PERMAFROST', 'BANGLADESH', 'NEPAL', 'BHUTAN', 'PAKISTAN', 'MYANMAR', 'CHINA', 'TIBET', 'SRI LANKA']
+  - code: UM
+    label: Ultramafic (dunite, peridotite, serpentinite, pyroxenite, komatiite, ophiolite)
+    role: generation - serpentinisation (strongest source)
+    patterns: ['ULTRA ?-?MAFI\w*', 'ULTRA ?-?BASI\w*', 'META ?-?ULTRA\w*', 'DUNITE\w*', 'PERIDOTIT\w*', 'HARZBURGIT\w*',
+               'LHERZOLIT\w*', 'WEHRLIT\w*', 'WEBSTERIT\w*', '(META ?-?)?PYROXENIT\w*', 'HORNBLENDIT\w*', '\w*KOMATIIT\w*',
+               '\w*PICRIT\w*', 'SERPENTIN\w*', 'CHROMITIT\w*', 'OPHIOLIT\w*', 'KIMBERLIT\w*', 'LAMPROIT\w*', 'CUMM?ULATE\w*']
+  - code: UMA
+    label: Ultramafic alteration (talc, steatite, soapstone, magnesite, tremolite-actinolite schist)
+    role: generation - evidence of past serpentinisation; weaker than UM (talc can also form from dolomite)
+    patterns: ['TALC\w*', 'STEATIT\w*', 'SOAPSTONE', 'MAGNESITE', 'TREMOLITE[- ]ACTINOLITE( SCHIST)?', 'TREMOLITE SCHIST',
+               'ACTINOLITE SCHIST', 'CHLORITE[- ]TREMOLITE\w*']
+  - code: BIF
+    label: Banded iron formation (BHQ, BMQ, BHJ, jaspilite)
+    role: generation - Fe(II) oxidation
+    patterns: ['BANDED (IRON|HAEMATITE|HEMATITE|MAGNETITE|FERRUGINOUS)\w*( \w+)?', 'B[HMCJ]Q', 'BHJ', 'BIF', 'JASPILL?IT\w*',
+               'IRON FORMATION', '(HA?EMATITE|MAGNETITE)[ ,-]*(HA?EMATITE|MAGNETITE)?[ -]?QUARTZITE', 'QUARTZ[- ]MAGNETITE\w*',
+               'FERRUGINOUS QUARTZITE', 'IRON ORE']
+  - code: EVAP
+    label: Evaporite (gypsum, anhydrite, salt)
+    role: seal (best); preservation
+    patterns: ['GYPS\w*', 'ANHYDRIT\w*', 'HALIT\w*', '(ROCK )?SALT', 'EVAPORIT\w*']
+  - code: COAL
+    label: Coal / lignite
+    role: other H2 source (minor); seal context
+    patterns: ['COAL\w*', 'LIGNIT\w*']
+  - code: MAF_I
+    label: Mafic intrusive (gabbro, norite, dolerite, anorthosite)
+    role: generation - serpentinisation / Fe(II) (moderate)
+    patterns: ['(META ?-?)?GABBR\w*', 'NORIT\w*', '(NEWER )?DOLERIT\w*', 'DIABAS\w*', 'TROCTOLIT\w*', 'ANORTHOSIT\w*', 'LAMPROPHYR\w*',
+               'BASIC (DYKE|DIKE|SILL|INTRUSIVE|INTRUSION|ROCK|BODY|BODIES)\w*', 'APPINIT\w*', 'TITANO ?-?MAGNETITE\w*', 'MAFIC (DYKE|DIKE|SILL|INTRUSIVE|INTRUSION|ROCK|BODY|BODIES)\w*', 'EPIDIORIT\w*']
+  - code: MAF_V
+    label: Mafic volcanic / metavolcanic (basalt, metabasalt, amphibolite, greenstone)
+    role: generation - Fe(II) (weak to moderate; Deccan flood basalt flagged separately in Phase 3)
+    patterns: ['\w*BASALT\w*', 'TRAPS?', 'SPILIT\w*', 'PILLOW\w*( LAVA)?', 'AMPHIBOLIT\w*', '(PARA-)?AMPHIBOLIT\w*', 'GREENSTONE\w*',
+               'HORNBLENDE[- ]SCHIST', 'META ?-?BASIC\w*', 'METABASIT\w*', 'META ?-?VOLCANIC\w*', 'BASIC (LAVA|FLOW|VOLCANIC)\w*',
+               'MAFIC (LAVA|FLOW|VOLCANIC)\w*', '\w*THOLEIIT\w*', 'PYRIBOLIT\w*', 'AMHIBOLIT\w*', 'BASIC', 'MAFIC', 'MAFIC GRANULITE', 'GREEN ?SCHIST']
+  - code: GNS
+    label: Gneiss, migmatite, granulite, charnockite (crystalline basement)
+    role: generation - radiolysis (U/Th/K); migration through fractures
+    patterns: ['\w*GNEISS\w*', '\w*MIGMATIT\w*', '\w*GRANULIT\w*', '\w*CHARNOCKIT\w*', 'ENDERBIT\w*', 'KHONDALIT\w*', 'LEPTYNIT\w*', 'LEPTINIT\w*', 'LEPTIT\w*', 'MYLONIT\w*',
+               'GNEISSIC COMPLEX']
+  - code: GRAN
+    label: Granitoid and felsic igneous (granite, granodiorite, syenite, pegmatite, rhyolite)
+    role: generation - radiolysis (U/Th/K)
+    patterns: ['\w*GRANIT\w*', 'GRNT', 'GRAN[OI]?DIOR\w*', 'TONALIT\w*', 'TRONDHJEMIT\w*', 'MONZONIT\w*', 'ADAMELLIT\w*',
+               '\w*SYENIT\w*', 'PEGMATIT\w*', 'APLIT\w*', '(META ?-?)?RHYOLIT\w*', 'FELSIT\w*', '\w*PORPHYR\w*', 'DIORIT\w*', 'DIORT',
+               'CARBONATIT\w*', '\w*GRANOPHYR\w*', 'FENITI\w*', 'ACID (VOLCANIC|INTRUSIVE|FLOW|ROCK)\w*', 'FELSIC (VOLCANIC|INTRUSIVE|ROCK)\w*', 'QUARTZ ?-?FELDSPATHIC']
+  - code: VOLC
+    label: Intermediate / undivided volcanic (andesite, dacite, trachyte, tuff)
+    role: context
+    patterns: ['ANDESIT\w*', 'DACIT\w*', 'TRACHYT\w*', 'TUFF\w*', 'AGGLOMERAT\w*', 'IGNIMBRIT\w*', 'VOLCANIC\w*', 'PYROCLAST\w*', 'LAVA\w*', 'TRACHYANDESIT\w*', '\w*RHYODACIT\w*', 'DELLENIT\w*', 'PHONOLIT\w*', 'MUGEARIT\w*', 'PITCHSTONE', 'ASH BEDS?']
+  - code: CARB
+    label: Carbonate (limestone, dolomite, marble, marl)
+    role: reservoir/seal (variable)
+    patterns: ['\w*LIMESTONE\w*', 'DOLOMIT\w*', 'DOLOSTONE', 'MARBLE\w*', 'MARL\w*', 'CHALK', 'STROMATOLIT\w*', 'CALC[- ]?SILICATE\w*', 'CALCARENIT\w*', 'CALCIRUDIT\w*', 'CARBONATE\w*', 'PHOSPHORIT\w*', 'CORAL\w*( REEF)?', 'LST', 'TRAVERTIN\w*', 'TUFA']
+  - code: SST
+    label: Sandstone, conglomerate, greywacke
+    role: reservoir
+    patterns: ['\w*SANDSTONE\w*', 'SST', '\w*CONGLOMER\w*', 'CONG', 'GRIT\w*', 'ARKOS\w*', '\w*GREYWACK\w*', '\w*GRAYWACK\w*', 'ORTHOQUARTZIT\w*',
+               'BRECCIA\w*', '\w*ARENIT\w*', 'DIA?MICTIT\w*', 'TILLIT\w*', 'RYTHMIT\w*', 'RHYTHMIT\w*']
+  - code: SH
+    label: Shale, mudstone, siltstone, claystone, chert
+    role: seal
+    patterns: ['\w*SHALE\w*', 'MUDSTONE\w*', 'SILTSTONE\w*', 'CLAYSTONE\w*', 'ARGILLIT\w*', 'CHERT\w*', 'PORCELLANIT\w*', 'BENTONIT\w*', '\w*TRAPPEAN\w*', 'RED BOLE', 'FIRECLAY', 'RADIOLARI\w*']
+  - code: MSED
+    label: Metasediment (quartzite, schist, phyllite, slate)
+    role: context (low porosity; can seal)
+    patterns: ['\w*QUARTZIT\w*', 'QTZ\w*', '\w*SCHIST\w*', '\w*PHYLLIT\w*', 'SLATE\w*', 'METAPELIT\w*', 'META ?-?SEDIMENT\w*', 'PELIT\w*',
+               'METAPSAMMIT\w*', 'QRTZIT\w*', 'QZT\w*', 'GRAPHIT\w*', 'PSAMMIT\w*', 'HORNFELS\w*', 'SKARN', 'QUARTZ ?-?REEFS?', 'QUARTZ VEINS?']
+  - code: QUAT
+    label: Unconsolidated cover (alluvium, sand, silt, clay, laterite, soil)
+    role: cover - hides basement; weak seal
+    patterns: ['ALLUVI\w*', 'SAND\w*', 'SILT\w*', 'CLAY\w*', 'GRAVEL\w*', 'PEBBL\w*', 'COBBL\w*', 'BOULDER\w*', 'KANKAR\w*', 'CALCRETE',
+               'CALICHE\w*', 'LATERIT\w*', 'BAUXIT\w*', 'SOIL\w*', 'AEOLIAN', 'EOLIAN', 'DUNES?', 'TALUS', 'SCREE', 'COLLUVI\w*',
+               'MORAIN\w*', 'TILL\w*', 'FLUVIO\w*', 'GLACIAL\w*', 'DEBRIS', 'MUD\w*', 'LOAM\w*', 'PEAT', 'TERRACE\w*', 'FAN\w*',
+               'DEPOSITS?', 'SEDIMENTS?', 'DURICRUST', 'LIMONIT\w*', 'OCHRE', 'TERRA ROSSA', 'MARINE', 'BEACH', 'TIDAL', 'FLAT\w*', 'HILL ?WASH', 'FLOOD ?PLAIN', '\w*CHANNEL\w*', 'CONCRETION\w*', 'NODUL\w*',
+               'ROCK FRAGMENTS', 'UNCONSOLIDATED', 'ALLUVIAL']

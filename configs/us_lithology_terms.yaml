@@ -1,0 +1,86 @@
+# US validation: how SGMC lithology maps to the India rock classes (configs/lithology_classes.yaml).
+# Fixed from SGMC documentation (USGS DS 1052) and the US audit term list BEFORE any well label is joined
+# (decisions_log 2026-11-02, US validation protocol). The India rulebook itself is not changed.
+#
+# Order of use for each SGMC polygon:
+#   main class  = class of MAJOR1 (term_overrides first, then the India rulebook's patterns);
+#                 if that gives UNK, the GENERALIZED_LITH fallback below
+#   other rocks = classes of MAJOR2-3, MINOR1-5, INCIDENTAL, INDETERMINATE (minor flags, as in India)
+#   corrections = same as India: QUAT with a pre-Quaternary youngest age -> SH; evaporite in Quaternary
+#                 units ignored; flood basalt -> MAF_D (Columbia River Basalt Group, by UNIT_NAME)
+
+term_overrides:            # SGMC terms the India patterns do not catch (exact term, case-insensitive)
+  Metadunite: UM
+  Metaperidotite: UM
+  Metapyroxenite: UM
+  Metaultramafic: UM
+  Fine-detrital: SH
+  Medium-detrital: SST
+  Coarse-detrital: SST
+  Mixed-detrital: SST
+  Clastic: SST
+  Plutonic: GRAN
+  Intrusive: GRAN
+  Chemical: CARB
+  Melange: SH
+  Tectonite: GNS
+  Iron-formation: BIF
+
+flood_basalt_unit_name: "COLUMBIA RIVER BASALT"
+
+generalized_lith:          # fallback when MAJOR1 gives no class (all 33 values in the US audit)
+  "Sedimentary, clastic": SST
+  "Unconsolidated, undifferentiated": QUAT
+  "Water": NODATA
+  "Ice": NODATA
+  "Dam": NODATA
+  "Unknown": NODATA
+  "Sedimentary, carbonate": CARB
+  "Sedimentary, undifferentiated": SH
+  "Igneous, volcanic": VOLC
+  "Igneous, intrusive": GRAN
+  "Metamorphic, undifferentiated": GNS
+  "Unconsolidated and Sedimentary, undifferentiated": QUAT
+  "Metamorphic, sedimentary clastic": MSED
+  "Metamorphic, gneiss": GNS
+  "Metamorphic and Sedimentary, undifferentiated": MSED
+  "Igneous and Sedimentary, undifferentiated": VOLC
+  "Metamorphic, volcanic": MAF_V
+  "Metamorphic, schist": MSED
+  "Igneous and Metamorphic, undifferentiated": GNS
+  "Sedimentary, chemical": CARB
+  "Metamorphic, intrusive": GNS
+  "Igneous, undifferentiated": GRAN
+  "Melange": SH
+  "Metamorphic, carbonate": CARB
+  "Metamorphic, amphibolite": MAF_V
+  "Tectonite, undifferentiated": GNS
+  "Metamorphic, sedimentary": MSED
+  "Metamorphic, serpentinite": UM
+  "Sedimentary, evaporite": EVAP
+  "Sedimentary, iron formation, undifferentiated": BIF
+  "Metamorphic, granulite": GNS
+  "Metamorphic, other": MSED
+  "Metamorphic, igneous": GNS
+
+melange_generalized: "Melange"        # SGMC melange share -> tf_ophiolite (as GSI "Ophiolite / Melange")
+
+structures:                # SGMC_Structure DESCRIPTION text (case-insensitive regex)
+  fault: "fault"
+  thrust: "thrust|reverse"
+  shear: "shear zone"
+  # basement faults = SGMC faults touching polygons that are crystalline (GNS, GRAN, UM, MAF_I main class)
+  # or Precambrian (AGE_MAX matches the pattern below). SGMC maps surface faults only; GSI's
+  # "fault involving basement" also includes interpreted ones, so the US input is weaker here.
+  precambrian_age: "PRECAMBRIAN|PROTEROZOIC|ARCHEAN|ARCHAEAN"
+
+qfaults:                   # USGS Quaternary faults -> neotectonic; class B (uncertain) excluded
+  exclude_class: "B"
+  thrust_slip_sense: "Thrust|Reverse"
+
+provinces:                 # Hasterok global_gprv.shp prov_type -> tectonic setting (title case, as GSI tf_class)
+  ophiolite: "ophiolite"
+  rift: "rift"
+  accretion: "accretionary"
+  # greenstone: no equivalent in Hasterok or SGMC -> tf_greenstone = 0
+  # suture: no old-suture layer for the US -> d_suture missing (rules treat it as no evidence)
