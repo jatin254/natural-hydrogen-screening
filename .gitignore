@@ -4,3 +4,4 @@ layers/
 __pycache__/
 *.pyc
 *.part
+metadata/restricted/
